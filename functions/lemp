@@ -1,0 +1,366 @@
+#!/bin/bash
+#
+# For RedHat (:
+# description: Starts and stops the LEMP \
+#              used to control nginx, MySQL, phpfpm.
+### END INIT INFO
+###############################################################################
+# Copyright 2002-2005 by Kai 'Oswald' Seidler, oswald@apachefriends.org, GPL-licensed
+# modified by andychu v1.0
+
+function testport() {
+	if netstat -an | egrep ":$1 .*LISTEN" > /dev/null
+	then
+		return 0
+	else
+		return 1
+	fi
+}
+
+function testrun() {
+	if test -f $1
+	then
+		pid=`cat $1`
+		if ps ax 2>/dev/null | egrep "^ *$pid.*$2" > /dev/null
+		then
+			return 0
+		else
+			rm $1
+			return 1
+		fi
+	else
+		return 1
+	fi
+}
+
+function osguess() {
+	if test -f /etc/redhat-release
+	then
+		if egrep "9 " /etc/redhat-release > /dev/null
+		then
+			echo "rh9"
+			return 0
+		fi
+	else
+		echo "unknown"
+		return 0
+	fi
+}
+
+de="false"
+case $LANG in
+        de*) de="true";;
+esac
+
+
+# we need root to run 
+if test "`id -u`" -ne 0
+then
+	$de || echo "You need to start LEMP as root!"
+	exit
+fi
+
+# do we have that new red hat linux 9 with posix native threads?
+if test "`osguess`" = "rh9"
+then
+	# for now disable PNTL. if PNTL gets more popular we will support it. - oswald [8apr3]
+	export LD_ASSUME_KERNEL=2.2.5
+	#echo "LEMP: DISABLE PNTL..."
+fi
+
+
+version=1.0
+
+case $1 in
+	"start")
+		$de && echo "Starte LEMP fuer Linux $version..."
+		$de || echo "Starting LEMP for Linux $version..."
+
+
+		$0 startmysql %
+		$0 startphpfpm %
+		$0 startfcgi %
+		$0 startnginx %
+		#$0 starttomcat %
+		#$0 startmemcached %
+
+
+		$de || echo "LEMP for Linux started."
+		;;
+
+	"reload")
+		$0 reloadphpfpm
+		$0 reloadnginx
+		$0 reloadmysql
+		;;
+
+	"startnginx")
+		if testrun  /dev/shm/nginx.pid nginx
+		then
+			$de || echo "LEMP: LEMP-nginx is already running."
+		else
+			if testport 80
+			then
+				$de || echo "LEMP: Another web server daemon is already running."
+			else
+					$de || echo "LEMP: Starting nginx..."
+					/opt/nginx/sbin/nginx > /dev/null
+				error=$?
+				if test $error -gt 0
+				then
+					$de || echo "LEMP: Error $error! Couldn't start nginx!"
+				fi
+			fi
+		fi
+		;;
+
+	"startmysql")
+		if testrun /opt/mysql/var/`/bin/hostname`.pid mysqld
+		then
+			$de || echo "LEMP: LEMP-MySQL is already running."
+		else
+			if testport 3306
+			then
+				$de || echo "LEMP: Another MySQL daemon is already running."
+			else
+				/opt/mysql/bin/mysql.server start > /dev/null &
+				$de || echo "LEMP: Starting MySQL..."
+			fi
+		fi
+		;;
+
+	"startphpfpm")
+		if testrun /opt/php/logs/php-fpm.pid fpm
+		then
+			$de || echo "LEMP: LEMP-phpfpm is already running."
+		else
+			/opt/php/sbin/php-fpm start > /dev/null &
+			$de || echo "LEMP: Starting phpfpm..."
+		fi
+		;;
+
+	"startfcgi")
+		if test -e /dev/shm/perl_cgi-dispatch.sock 
+		then
+			$de || echo "LEMP: LEMP-fcgi is already running."
+		else
+			/usr/bin/perl /opt/shell/perl-fcgi.pl > /dev/null &
+			$de || echo "LEMP: Starting fcgi..."
+		fi
+		;;
+
+	"starttomcat")
+		if testport 8080
+		then
+			$de || echo "LEMP: LEMP-tomcat is already running."
+		else
+			/opt/tomcat/bin/startup.sh > /dev/null &
+			$de || echo "LEMP: Starting tomcat..."
+		fi
+		;;
+
+	"startsquid")
+		if testport 81
+		then
+			$de || echo "LEMP: LEMP-squid is already running."
+		else
+			/opt/squid/sbin/squid -s > /dev/null &
+			$de || echo "LEMP: Starting squid..."
+		fi
+		;;
+
+	"startmemcached")
+		if testrun /tmp/memcached.pid memcached
+		then
+			$de || echo "LEMP: LEMP-memcached is already running."
+		else
+			if testport 12000
+			then
+				$de || echo "LEMP: Another memcached daemon is already running."
+			else
+				/opt/memcached/bin/memcached -d -m 50 -u root -l 127.0.0.1 -p 12000 -c 1024 -P /tmp/memcached.pid > /dev/null &
+				$de || echo "LEMP: Starting memcached..."
+			fi
+		fi
+		;;
+
+	"stop")
+		$de || echo "Stopping LEMP for Linux $version..."
+
+		$0 stopnginx %
+		$0 stopphpfpm %
+		$0 stopmysql %
+		#$0 stoptomcat %
+		#$0 stopmemcached %
+
+
+		$de || echo "LEMP stopped."
+		;;
+
+	"stopnginx")
+		if test -f /dev/shm/nginx.pid
+		then
+			/bin/kill -15 `cat /dev/shm/nginx.pid`
+			$de || echo "LEMP: Stopping nginx..."
+			#sleep 2
+			#test -f /dev/shm/nginx.pid && rm /dev/shm/nginx.pid
+		else
+			$de || echo "LEMP: LEMP-nginx is not running."
+		fi
+		;;
+
+	"reloadnginx")
+		if test -f /dev/shm/nginx.pid
+		then
+			/bin/kill -HUP `cat /dev/shm/nginx.pid`
+			$de && echo "LEMP: Aktualisiere Apache..."
+			$de || echo "LEMP: Reload nginx..."
+		else
+			$de || echo "LEMP: nginx isn't running..."
+		fi
+		;;
+
+
+	"stopmysql")
+		if test -f /opt/mysql/var/`/bin/hostname`.pid
+		then
+			/opt/mysql/bin/mysql.server stop > /dev/null 2>&1 &
+			$de || echo "LEMP: Stopping MySQL..."
+			sleep 2
+			test -f /opt/mysql/var/`/bin/hostname`.pid && rm /opt/mysql/var/`/bin/hostname`.pid
+		else
+			$de || echo "LEMP: LEMP-MySQL is not running."
+		fi
+		;;
+
+	"reloadmysql")
+		if test -f /opt/mysql/var/`/bin/hostname`.pid
+		then
+			h="`/bin/hostname`"
+			/bin/kill -HUP `cat /opt/mysql/var/$h.pid`
+			$de || echo "LEMP: Reload MySQL..."
+		else
+			$de || echo "LEMP: MySQL isn't running..."
+		fi
+		;;
+
+	"stopphpfpm")
+		if testrun /opt/php/logs/php-fpm.pid fpm
+		then
+			/opt/php/sbin/php-fpm stop > /dev/null &
+			$de || echo "LEMP: Stopping phpfpm..."
+		else
+			$de || echo "LEMP: LEMP-phpfpm is not running."
+		fi
+		;;
+
+	"reloadphpfpm")
+		if testrun /opt/php/logs/php-fpm.pid fpm
+		then
+			/opt/php/sbin/php-fpm reload > /dev/null &
+			$de || echo "LEMP: Reload phpfpm..."
+		else
+			$de || echo "LEMP: LEMP-phpfpm isn't running..."
+		fi
+		;;
+
+	"restartphpfpm")
+		if testrun /opt/php/logs/php-fpm.pid fpm
+		then
+			/opt/php/sbin/php-fpm restart > /dev/null &
+		else
+			$de || echo "LEMP: LEMP-phpfpm isn't running..."
+		fi
+		;;
+
+	"stoptomcat")
+		if testport 8080
+		then
+			/opt/tomcat/bin/shutdown.sh > /dev/null &
+			$de || echo "LEMP: Stopping tomcat..."
+		else
+			$de || echo "LEMP: LEMP-tomcat is not running."
+		fi
+		;;
+
+	"restarttomcat")
+		$0 stoptomcat
+		sleep 4
+		$0 starttomcat
+		;;
+
+	"stopsquid")
+		if testport 81
+		then
+			/opt/squid/sbin/squid -k shutdown > /dev/null &
+			$de || echo "LEMP: Stopping squid..."
+		else
+			$de || echo "LEMP: LEMP-squid is not running."
+		fi
+		;;
+
+	"restartsquid")
+		$0 stopsquid
+		sleep 4
+		$0 startsquid
+		;;
+
+	"stopmemcached")
+		if testrun /tmp/memcached.pid memcached
+		then
+			/bin/kill `cat /tmp/memcached.pid`
+			$de || echo "LEMP: Stopping memcached..."
+		else
+			$de || echo "LEMP: LEMP-memcached is not running."
+		fi
+		;;
+
+	"restartmemcached")
+		$0 stopmemcached
+		sleep 4
+		$0 startmemcached
+		;;
+
+	"restart")
+		$0 stop
+		sleep 4
+		$0 start
+		;;
+
+        "version")
+                $de || echo "Version: LEMP for Linux $version"
+                ;;
+
+	*)	if $de 
+		then
+			echo ""
+		else
+			echo "Usage: $0 <action>"
+			echo ""
+			echo "	start           Start LEMP (nginx, MySQL, phpfpm, tomcat)"
+			echo "	startnginx      Start only nginx"
+			echo "	startmysql      Start only MySQL"
+			echo "	starttomcat     Start only tomcat"
+			echo "	starttsquid     Start only squid"
+			echo "	startphpfpm     Start only phpfpm"
+			echo "	startmemcached  Start only memcached"
+			echo ""
+			echo "	stop            Stop LEMP (nginx, MySQL, phpfpm, tomcat)"
+			echo "	stopnginx       Stop only nginx"
+			echo "	stopmysql       Stop only MySQL"
+			echo "	stoptomcat      Stop only tomcat"
+			echo "	stopsquid       Stop only squid"
+			echo "	stopphpfpm      Stop only phpfpm"
+			echo "	stopmemcached   Stop only memcached"
+			echo ""
+			echo "	reload          Reload LEMP (nginx, MySQL, phpfpm )"
+			echo "	reloadnginx     Reload only nginx"
+			echo "	reloadmysql     Reload only MySQL"
+			echo "	reloadphpfpm    Reload only phpfpm"
+			echo ""
+			echo "	restart      Stop and start LEMP"
+			echo ""
+		fi
+
+		;;
+esac

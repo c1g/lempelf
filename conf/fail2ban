@@ -1,0 +1,9 @@
+/var/log/fail2ban.log {
+	missingok
+	notifempty
+	size 30k
+	create 0600 root root
+	postrotate
+		/usr/bin/fail2ban-client reload 2>/dev/null || true
+	endscript
+}

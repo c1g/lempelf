@@ -1,0 +1,132 @@
+					lempelf一键安装包 - Readme
+
+Lempelf一键安装包是什么?
+--------------------------------------------------------------------------------
+Lempelf一键安装包是用Shell编写的在Linux平台快速安装常用服务的Shell程序。
+
+我们为什么需要它?
+--------------------------------------------------------------------------------
+编译安装需要输入大量的命令，如果是配置生产环境需要耗费大量的时间。
+不会Linux的站长或Linux新手想使用Linux作为生产环境…… 
+
+它有什么优势?
+--------------------------------------------------------------------------------
+无需一个一个的输入命令，无需值守，编译安装优化编译参数，提高性能，解决不必要的软件间依赖。
+
+
+Lempelf都做了些什么?
+--------------------------------------------------------------------------------
+基本设置:
+163 yum源设置并更新
+时区设置为上海
+语言设置为英文并支持中文
+安装ntp服务并校准时间
+添加操作用户
+
+安装服务:
+Percona-Server-5.5.22-rel25.2
+php-5.2.17p1
+ZendOptimizer-3.3.9 
+eaccelerator-0.9.6.1 
+ImageMagick-6.6.9-4
+memcache-3.0.5
+PDO_MYSQL-1.0.2
+nginx-0.8.55
+fcgi
+phpMyAdmin-3.5.1-all-languages
+awstats-6.8加地区补丁
+常用pear包
+
+安全:
+iptables 防火墙默认打开80,3306,22
+
+删除系统特殊的的用户帐号
+删除系统特殊的组帐号
+增加用户密码长度
+减少自动注销帐号时间
+限制Shell命令记录大小
+注销时删除命令记录
+只充许suadmin组来su
+只充许操作用户sudo
+ssh不充许root直接登录
+修改ssh服务的sshd 自定义端口
+关闭系统不使用的服务
+减少控制台数量
+禁止Control-Alt-Delete键盘关闭命令
+关闭selinux 
+关闭ipv6
+修改vim设置
+系统文件加上不可更改属性
+去除系统文件root权限
+
+工具:
+fail2ban-0.8.4防暴力破ssh密码
+iftop-0.17查看网卡连接状况
+systat
+summary用于生成系统及硬件信息
+firstlog.sh生成文件及运行信息
+mailx可以使用公用smtp转发邮件
+logwatch每日自动发送系统日志报告
+chkrootkit系统rootkit自动检查工具
+rkhunter系统rootkit自动检查工具
+
+
+优化:
+内核及文件数优化
+
+
+Lempelf相关配置文件
+--------------------------------------------------------------------------------
+mysql path: ${SERVERPATH}/mysql/my.cnf
+nginx path: ${SERVERPATH}/nginx/conf/nginx.conf
+php path: ${SERVERPATH}/php/etc/php.ini
+web panel file: ${SERVERPATH}/nginx/conf/htpasswd
+awstats: /etc/awstats/
+fail2ban: /etc/fail2ban/jail.conf
+
+Lempelf访问路径
+--------------------------------------------------------------------------------
+phpinfo: http://${DEFAULTDOMAIN}/phpinfo.php
+phpmyadmin: http://${DEFAULTDOMAIN}/phpmyadmin/
+awstats: http://${DEFAULTDOMAIN}/cgi-bin/awstats.pl?config=${DEFAULTDOMAIN}
+
+Lempelf网站目录
+--------------------------------------------------------------------------------
+${SERVERPATH}/htdocs
+${SERVERPATH}/lampp/htdocs
+
+Lempelf脚本目录
+--------------------------------------------------------------------------------
+${SERVERPATH}/shell
+
+Lempelf安装步骤
+--------------------------------------------------------------------------------
+tar zxvf lempelf.tar.gz
+cd ./lempelf
+chmod a+x ./lempelf.sh
+vi ./lemplef.sh
+#修改mysql密码;安装路径;操作用户;域名
+
+./lempelf.sh
+#之前安装过的会提示是否重新安装
+#部分服务不想安装的可以注释掉,也可以在scripts/下单独安装
+#期间会有一次输入操作用户的密码
+
+Lempelf服务管理
+--------------------------------------------------------------------------------
+${SERVERPATH}/lemp {start|stop}
+
+
+**********注意***********
+--------------------------------------------------------------------------------
+系统会增加一个操作用户来取代root,在lempelf.sh中定义,具有su及sudo权限
+**ROOT用户将不充许登录,请一定要创建个可以登录的普通用户
+安装完成后会开启iptables和fail2ban,ssh使用普通用户在指定端口(默认22)登录,密码错误3次会ban掉10分钟
+修改了ssh默认端口在断开ssh前一定要重启ssh服务,确保监听端口(netstat -lntp)和iptables里一致 /etc/init.d/sshd restart
+添加用户或修改用户需先将系统文件解锁./functions/filelock.sh unlock
+web访问的默认用户及密码为"admin",可以用apache的htpasswd程序来生成新密码
+
+
+支持及更新
+--------------------------------------------------------------------------------
+http://blog.c1gstudio.com

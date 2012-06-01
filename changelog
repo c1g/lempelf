@@ -1,0 +1,70 @@
+ChangeLog
+--------------------------------------------------------------------------------
+2012-6-1 发布Lempelf 1.1.0
+Bugfix:nginx在64位系统安装时需增加libpcre的软链接
+Bugfix:nginx关闭默认主机头的日志
+Bugfix:主dns改成上海电信202.96.209.133
+Bugfix:centos6内核优化用nf_conntrack_max替代ip_conntrack_max
+Feature:增加下载软件包时失败或文件名不匹配验证
+Feature:fail2ban安装后使用restart启动,可以防止再次安装时没有放入到iptables
+Feature:nginx的fcgi配置中增加try_files $fastcgi_script_name =404; 可以增加cgi.fix_pathinfo为1时的安全性,但可能会影响php rewrite
+Feature:不再使用vim代替vi
+Feature:取消sshd 反解dns,加速连接时间
+Feature:删除mysql的test数据库
+Feature:my.conf中指定运行用户为mysql
+Feature:my.conf中设定local-infile=0;禁止load data local infile命令读系统文件,会影响数据导入功能
+Feature:my.conf中max_heap_table_size = 1792M
+Feature:my.conf中innodb_log_file_size = 256M
+Feature:增加清除home中.mysql_history记录
+Feature:mysql不编译PERFSCHEMA_SCHEMA库
+Feature:升级至phpMyAdmin-3.5.1-all-languages
+Feature:phpmyadmin中隐藏information_schema库
+Feature:mysql升级Percona-Server-5.5.22-rel25.2
+Feature:mailx安装脚本
+Feature:logwatch安装脚本
+Feature:chkrootkit安装脚本
+Feature:rkhunter安装脚本
+
+
+
+
+2012-3-28 发布Lempelf 1.0.3
+Bugfix:awstats安装完成后的提示域名地址
+Bugfix:nginx安装失败 ./scripts/setup_nginx.sh 第21行文件名修正
+Bugfix:php启动时找不到mysqlclient.so.18 (echo "/opt/mysql/lib" > /etc/ld.so.conf.d/mysql.conf && ldconfig)
+Bugfix:64位下secure日志中的PAM错误 修改/etc/pam.d/su 中路径
+Bugfix:centos6的tty,ctrl+alt+del,ipv6
+Bugfix:限制可以su的用户 需要su的用户需用gpasswd 添加到组
+Change:nginx改为保留1月
+Feature:新增scripts/firstlog.sh 用于生成文件及运行信息供日后对比 
+
+2012-3-23 发布Lempelf 1.0.2
+php的magic_quotes_gpc 设为on
+yum增加cmake
+mysql升级为Percona-Server-5.5.20-rel24.1
+增加/tmp/mysql.sock软链接
+php升级成5.2.17并打上hash补丁
+隐藏nginx版本号为1.0
+nginx.conf中隐藏版本号
+修改autosafe.sh中自动运行的服务
+升级pcre到pcre-8.30
+phpmyadmin更新至phpMyAdmin-3.4.10.1-all-languages
+
+
+2011-11-30 发布Lempelf 1.0.1
+支持32位ZendOptimizer
+增加操作用户输入密码提示
+增加可以自定义ssh端口
+增加centos6的yum支持
+增加内核shmmax优化修正eaccelerator.shm_size错误
+修正php的cgi.fix_pathinfo参数
+修改net.ipv4.tcp_max_tw_buckets = 15000
+nginx更新到0.8.55
+不关闭messagebus服务
+yum 增加perl-ExtUtils-MakeMaker
+安装mysql时自动删除 /etc/my.cnf
+toolkits下增加采集系统信息脚本
+
+
+2011-4-27  发布Lempelf 1.0.0
+
